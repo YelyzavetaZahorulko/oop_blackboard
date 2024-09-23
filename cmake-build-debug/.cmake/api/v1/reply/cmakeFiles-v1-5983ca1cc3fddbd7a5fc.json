@@ -1203,8 +1203,8 @@
 	"kind" : "cmakeFiles",
 	"paths" : 
 	{
-		"build" : "/Users/yelyzaveta/CLionProjects/blackboard/cmake-build-debug",
-		"source" : "/Users/yelyzaveta/CLionProjects/blackboard"
+		"build" : "/Users/yelyzaveta/CLionProjects/oop_blackboard/cmake-build-debug",
+		"source" : "/Users/yelyzaveta/CLionProjects/oop_blackboard"
 	},
 	"version" : 
 	{
