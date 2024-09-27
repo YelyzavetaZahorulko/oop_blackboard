@@ -90,6 +90,37 @@ public:
     }
 };
 
+class Circle : public Shape {
+    int radius;
+
+public:
+    Circle(int x, int y, int radius) : Shape(x, y), radius(radius) {}
+
+    void draw(std::vector<std::vector<char>>& grid) const override {
+        if (radius <= 0) return;
+
+        int r2 = radius * radius;  // Precompute radius squared to compare distances
+        for (int i = 0; i < BOARD_HEIGHT; ++i) {
+            for (int j = 0; j < BOARD_WIDTH; ++j) {
+                // Calculate the squared distance from the point (i, j) to the center (x, y)
+                int dx = j - x;
+                int dy = i - y;
+                int distSquared = dx * dx + dy * dy;
+
+                // If the squared distance is close to the radius squared, draw the border
+                if (distSquared >= (r2 - radius) && distSquared <= (r2 + radius)) {
+                    grid[i][j] = '*';
+                }
+            }
+        }
+    }
+
+    // Return the shape's parameters as a tuple
+    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
+        return std::make_tuple("Circle", x, y, radius, 0, false);
+    }
+};
+
 class CommandLine {
     Board& board;
 
@@ -110,7 +141,12 @@ public:
                 ss >> x >> y >> param1;  // x, y, height
                 std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
                 board.addShape(triangle);
-            } else {
+            } else if (shapeType == "circle") {
+                ss >> x >> y >> param1;  // x, y, radius
+                std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
+                board.addShape(circle);
+            }
+            else {
                 std::cout << "Unknown shape type.\n";
             }
         } else {
