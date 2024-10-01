@@ -121,6 +121,43 @@ public:
     }
 };
 
+class Rectangle : public Shape {
+    int width;
+    int height;
+
+public:
+    Rectangle(int x, int y, int width, int height) : Shape(x, y), width(width), height(height) {}
+
+    void draw(std::vector<std::vector<char>>& grid) const override {
+        if (width <= 0 || height <= 0) return;
+
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                int gridX = x + j; // Calculate grid x position
+                int gridY = y + i; // Calculate grid y position
+
+                // Draw the top and bottom borders
+                if (i == 0 || i == height - 1) {
+                    if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                        grid[gridY][gridX] = '*'; // Draw top and bottom edges
+                    }
+                }
+                // Draw the left and right borders
+                else if (j == 0 || j == width - 1) {
+                    if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                        grid[gridY][gridX] = '*'; // Draw left and right edges
+                    }
+                }
+            }
+        }
+    }
+
+    // Method to return the shape's parameters
+    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
+        return std::make_tuple("Rectangle", x, y, width, height, false);
+    }
+};
+
 class CommandLine {
     Board& board;
 
@@ -145,6 +182,10 @@ public:
                 ss >> x >> y >> param1;  // x, y, radius
                 std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
                 board.addShape(circle);
+            } else if (shapeType == "rectangle") {
+                ss >> x >> y >> param1 >> param2;  // x, y, height, weight
+                std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
+                board.addShape(rectangle);
             }
             else {
                 std::cout << "Unknown shape type.\n";
