@@ -24,18 +24,24 @@ public:
 
 // Struct to define the board
 struct Board {
+private:
     std::vector<std::vector<char>> grid;
     std::vector<std::tuple<std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
-
+    std::vector<std::shared_ptr<Shape>> shapes;
+public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
     void print() {
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
         for (auto& row : grid) {
+            std::cout << "|";  // Left border
             for (char c : row) {
                 std::cout << c;
             }
+            std::cout << "|";  // Right border
             std::cout << "\n";
         }
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
     }
 
     bool addShape(const std::shared_ptr<Shape>& shape) {
@@ -48,10 +54,23 @@ struct Board {
             }
         }
 
-        // Draw the shape
-        shape->draw(grid);
         shapesParams.push_back(shapeParams);
+        shapes.push_back(shape);
         return true;
+    }
+
+    void clear() {
+        shapes.clear();
+        for (auto& row : grid) {
+            std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
+        }
+    }
+
+    void draw() {
+        for (const auto& shape : shapes) {
+            shape->draw(grid);
+        }
+        print();
     }
 };
 
@@ -173,24 +192,34 @@ public:
 
         ss >> action >> shapeType;
 
-        if (action == "draw") {
+        if (action == "add") {
             if (shapeType == "triangle") {
                 ss >> x >> y >> param1;  // x, y, height
                 std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
                 board.addShape(triangle);
+                std::cout << "Triangle is succesfully added \n";
             } else if (shapeType == "circle") {
                 ss >> x >> y >> param1;  // x, y, radius
                 std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
                 board.addShape(circle);
+                std::cout << "Circle is succesfully added \n";
             } else if (shapeType == "rectangle") {
                 ss >> x >> y >> param1 >> param2;  // x, y, height, weight
                 std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
                 board.addShape(rectangle);
+                std::cout << "Rectangle is succesfully added \n";
             }
             else {
-                std::cout << "Unknown shape type.\n";
+                std::cout << "Unknown shape type \n";
             }
-        } else {
+        } else if (action == "draw"){
+            board.draw();
+        } else if (action == "clear"){
+            board.clear();
+            std::cout << "Board is succesfully cleared \n";
+
+        }
+        else {
             std::cout << "Unknown command.\n";
         }
     }
@@ -209,7 +238,6 @@ int main() {
         if (command == "exit") break;
 
         cli.executeCommand(command);
-        board.print();
     }
     return 0;
 }
