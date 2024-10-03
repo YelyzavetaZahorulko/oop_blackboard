@@ -26,8 +26,9 @@ public:
 struct Board {
 private:
     std::vector<std::vector<char>> grid;
-    std::vector<std::tuple<std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
+    std::vector<std::tuple<int, std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
     std::vector<std::shared_ptr<Shape>> shapes;
+    int currentShapeId = 1;
 public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
@@ -48,13 +49,17 @@ public:
         auto shapeParams = shape->getParameters();
 
         for (const auto& params : shapesParams) {
-            if (params == shapeParams) {
-                std::cout << "Shape already exists.\n";
+            if (std::get<1>(params) == std::get<0>(shapeParams) &&  // Shape type
+                std::get<2>(params) == std::get<1>(shapeParams) &&  // x
+                std::get<3>(params) == std::get<2>(shapeParams) &&  // y
+                std::get<4>(params) == std::get<3>(shapeParams) &&  // param1
+                std::get<5>(params) == std::get<4>(shapeParams)) {  // param2
+                std::cout << "Shape with the same parameters already exists.\n";
                 return false;
-            }
+                }
         }
 
-        shapesParams.push_back(shapeParams);
+        shapesParams.push_back(std::make_tuple(currentShapeId++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
         shapes.push_back(shape);
         return true;
     }
@@ -71,6 +76,28 @@ public:
             shape->draw(grid);
         }
         print();
+    }
+
+    void showShapesList() {
+        for (const auto& params : shapesParams) {
+            int id = std::get<0>(params);
+            std::string shapeType = std::get<1>(params);
+            int x = std::get<2>(params);
+            int y = std::get<3>(params);
+            int param1 = std::get<4>(params);
+            int param2 = std::get<5>(params);
+            // bool isVertical = std::get<6>(params);
+
+            std::cout << "Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
+
+            if (shapeType == "Triangle") {
+                std::cout << ", Height: " << param1 << "\n";
+            } else if (shapeType == "Circle") {
+                std::cout << ", Radius: " << param1 << "\n";
+            } else if (shapeType == "Rectangle") {
+                std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
+            }
+        }
     }
 };
 
@@ -217,7 +244,9 @@ public:
         } else if (action == "clear"){
             board.clear();
             std::cout << "Board is succesfully cleared \n";
-
+        } else if (action == "list") {
+            board.showShapesList();
+            std::cout << "\n";
         }
         else {
             std::cout << "Unknown command.\n";
