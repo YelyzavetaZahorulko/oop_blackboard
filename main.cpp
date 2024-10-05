@@ -204,6 +204,52 @@ public:
     }
 };
 
+class Line : public Shape {
+private:
+    int x1, y1, x2, y2;
+
+public:
+    Line(int startX, int startY, int endX, int endY) : Shape(startX, startY), x1(startX), y1(startY), x2(endX), y2(endY) {}
+
+    void draw(std::vector<std::vector<char>>& grid) const override {
+        int dx = abs(x2 - x1);
+        int dy = abs(y2 - y1);
+        int sx = (x1 < x2) ? 1 : -1; // Step in x
+        int sy = (y1 < y2) ? 1 : -1; // Step in y 
+        int err = dx - dy;
+
+        int x = x1;
+        int y = y1;
+
+        while (true) {
+            // Ensure the point is within grid bounds
+            if (x >= 0 && x < BOARD_WIDTH && y >= 0 && y < BOARD_HEIGHT) {
+                grid[y][x] = '*';
+            }
+
+            // Check if we reached the endpoint
+            if (x == x2 && y == y2) break;
+
+            int e2 = 2 * err;
+
+            // Move horizontally or vertically based on error margin
+            if (e2 > -dy) {
+                err -= dy;
+                x += sx; // Move in x direction
+            }
+            if (e2 < dx) {
+                err += dx;
+                y += sy; // Move in y direction
+            }
+        }
+    }
+
+    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
+        return std::make_tuple("Line", x1, y1, x2, y2, false);
+    }
+};
+
+
 class CommandLine {
     Board& board;
 
@@ -235,6 +281,11 @@ public:
                 std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
                 board.addShape(rectangle);
                 std::cout << "Rectangle is succesfully added \n";
+            } else if (shapeType == "line") {
+                ss >> x >> y >> param1 >> param2;  // x1, y1, x2, y2
+                std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
+                board.addShape(line);
+                std::cout << "Line is succesfully added \n";
             }
             else {
                 std::cout << "Unknown shape type \n";
