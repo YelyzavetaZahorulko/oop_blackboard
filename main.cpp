@@ -99,6 +99,13 @@ public:
             }
         }
     }
+
+    void availableShapes() const {
+        std::cout << "Triangle: coordinates, height\n";
+        std::cout << "Circle: coordinates, radius\n";
+        std::cout << "Rectangle: coordinates, height, width\n";
+        std::cout << "Line: start coordinates, end coordinates\n";
+    }
 };
 
 class Triangle: public Shape {
@@ -215,7 +222,7 @@ public:
         int dx = abs(x2 - x1);
         int dy = abs(y2 - y1);
         int sx = (x1 < x2) ? 1 : -1; // Step in x
-        int sy = (y1 < y2) ? 1 : -1; // Step in y 
+        int sy = (y1 < y2) ? 1 : -1; // Step in y
         int err = dx - dy;
 
         int x = x1;
@@ -297,6 +304,9 @@ public:
             std::cout << "Board is succesfully cleared \n";
         } else if (action == "list") {
             board.showShapesList();
+            std::cout << "\n";
+        } else if (action == "shapes") {
+            board.availableShapes();
             std::cout << "\n";
         }
         else {
