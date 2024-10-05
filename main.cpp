@@ -65,7 +65,6 @@ public:
     }
 
     void clear() {
-        shapes.clear();
         for (auto& row : grid) {
             std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
         }
@@ -105,6 +104,18 @@ public:
         std::cout << "Circle: coordinates, radius\n";
         std::cout << "Rectangle: coordinates, height, width\n";
         std::cout << "Line: start coordinates, end coordinates\n";
+    }
+
+    void undo() {
+        if (!shapes.empty()) {
+            shapes.pop_back();  // Remove the last added shape
+            shapesParams.pop_back();  // Remove its parameters
+            clear();
+            std::cout << "Last shape removed from the board.\n";
+            draw();  // Redraw the board with remaining shapes
+        } else {
+            std::cout << "No shapes to remove.\n";
+        }
     }
 };
 
@@ -307,6 +318,9 @@ public:
             std::cout << "\n";
         } else if (action == "shapes") {
             board.availableShapes();
+            std::cout << "\n";
+        } else if (action == "undo") {
+            board.undo();
             std::cout << "\n";
         }
         else {
