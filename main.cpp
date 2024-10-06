@@ -3,7 +3,7 @@
 #include <tuple>
 #include <sstream>
 #include <string>
-
+#include <fstream>
 
 // Define the size of the board
 const int BOARD_WIDTH = 80;
@@ -23,101 +23,7 @@ public:
 
 
 // Struct to define the board
-struct Board {
-private:
-    std::vector<std::vector<char>> grid;
-    std::vector<std::tuple<int, std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
-    std::vector<std::shared_ptr<Shape>> shapes;
-    int currentShapeId = 1;
-public:
-    Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
-    void print() {
-        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
-        for (auto& row : grid) {
-            std::cout << "|";  // Left border
-            for (char c : row) {
-                std::cout << c;
-            }
-            std::cout << "|";  // Right border
-            std::cout << "\n";
-        }
-        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
-    }
-
-    bool addShape(const std::shared_ptr<Shape>& shape) {
-        auto shapeParams = shape->getParameters();
-
-        for (const auto& params : shapesParams) {
-            if (std::get<1>(params) == std::get<0>(shapeParams) &&  // Shape type
-                std::get<2>(params) == std::get<1>(shapeParams) &&  // x
-                std::get<3>(params) == std::get<2>(shapeParams) &&  // y
-                std::get<4>(params) == std::get<3>(shapeParams) &&  // param1
-                std::get<5>(params) == std::get<4>(shapeParams)) {  // param2
-                std::cout << "Shape with the same parameters already exists.\n";
-                return false;
-                }
-        }
-
-        shapesParams.push_back(std::make_tuple(currentShapeId++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
-        shapes.push_back(shape);
-        return true;
-    }
-
-    void clear() {
-        for (auto& row : grid) {
-            std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
-        }
-    }
-
-    void draw() {
-        for (const auto& shape : shapes) {
-            shape->draw(grid);
-        }
-        print();
-    }
-
-    void showShapesList() {
-        for (const auto& params : shapesParams) {
-            int id = std::get<0>(params);
-            std::string shapeType = std::get<1>(params);
-            int x = std::get<2>(params);
-            int y = std::get<3>(params);
-            int param1 = std::get<4>(params);
-            int param2 = std::get<5>(params);
-            // bool isVertical = std::get<6>(params);
-
-            std::cout << "Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
-
-            if (shapeType == "Triangle") {
-                std::cout << ", Height: " << param1 << "\n";
-            } else if (shapeType == "Circle") {
-                std::cout << ", Radius: " << param1 << "\n";
-            } else if (shapeType == "Rectangle") {
-                std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
-            }
-        }
-    }
-
-    void availableShapes() const {
-        std::cout << "Triangle: coordinates, height\n";
-        std::cout << "Circle: coordinates, radius\n";
-        std::cout << "Rectangle: coordinates, height, width\n";
-        std::cout << "Line: start coordinates, end coordinates\n";
-    }
-
-    void undo() {
-        if (!shapes.empty()) {
-            shapes.pop_back();  // Remove the last added shape
-            shapesParams.pop_back();  // Remove its parameters
-            clear();
-            std::cout << "Last shape removed from the board.\n";
-            draw();  // Redraw the board with remaining shapes
-        } else {
-            std::cout << "No shapes to remove.\n";
-        }
-    }
-};
 
 class Triangle: public Shape {
     int height;
@@ -267,6 +173,169 @@ public:
     }
 };
 
+struct Board {
+private:
+    std::vector<std::vector<char>> grid;
+    std::vector<std::tuple<int, std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
+    std::vector<std::shared_ptr<Shape>> shapes;
+    int currentShapeId = 1;
+public:
+    Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
+
+    void print() {
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
+        for (auto& row : grid) {
+            std::cout << "|";  // Left border
+            for (char c : row) {
+                std::cout << c;
+            }
+            std::cout << "|";  // Right border
+            std::cout << "\n";
+        }
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
+    }
+
+    bool addShape(const std::shared_ptr<Shape>& shape) {
+        auto shapeParams = shape->getParameters();
+
+        for (const auto& params : shapesParams) {
+            if (std::get<1>(params) == std::get<0>(shapeParams) &&  // Shape type
+                std::get<2>(params) == std::get<1>(shapeParams) &&  // x
+                std::get<3>(params) == std::get<2>(shapeParams) &&  // y
+                std::get<4>(params) == std::get<3>(shapeParams) &&  // param1
+                std::get<5>(params) == std::get<4>(shapeParams)) {  // param2
+                std::cout << "Shape with the same parameters already exists.\n";
+                return false;
+                }
+        }
+
+        shapesParams.push_back(std::make_tuple(currentShapeId++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
+        shapes.push_back(shape);
+        return true;
+    }
+
+    void clear() {
+        shapes.clear();
+        shapesParams.clear();
+        for (auto& row : grid) {
+            std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
+        }
+    }
+
+    void draw() {
+        for (const auto& shape : shapes) {
+            shape->draw(grid);
+        }
+        print();
+    }
+
+    void showShapesList() {
+        for (const auto& params : shapesParams) {
+            int id = std::get<0>(params);
+            std::string shapeType = std::get<1>(params);
+            int x = std::get<2>(params);
+            int y = std::get<3>(params);
+            int param1 = std::get<4>(params);
+            int param2 = std::get<5>(params);
+            // bool isVertical = std::get<6>(params);
+
+            std::cout << "Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
+
+            if (shapeType == "Triangle") {
+                std::cout << ", Height: " << param1 << "\n";
+            } else if (shapeType == "Circle") {
+                std::cout << ", Radius: " << param1 << "\n";
+            } else if (shapeType == "Rectangle") {
+                std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
+            }
+        }
+    }
+
+    void availableShapes() const {
+        std::cout << "Triangle: coordinates, height\n";
+        std::cout << "Circle: coordinates, radius\n";
+        std::cout << "Rectangle: coordinates, height, width\n";
+        std::cout << "Line: start coordinates, end coordinates\n";
+    }
+
+    void undo() {
+        if (!shapes.empty()) {
+            shapes.pop_back();  // Remove the last added shape
+            shapesParams.pop_back();  // Remove its parameters
+            clear();
+            std::cout << "Last shape removed from the board.\n";
+            draw();  // Redraw the board with remaining shapes
+        } else {
+            std::cout << "No shapes to remove.\n";
+        }
+    }
+
+    void save(const std::string& filename) {
+        std::ofstream outFile(filename, std::ios::out);
+        if (!outFile) {
+            std::cout << "Error opening file for saving.\n";
+            return;
+        }
+
+        // Save each shape's parameters
+        for (const auto& shape : shapes) {
+            auto params = shape->getParameters();
+            std::string type = std::get<0>(params);
+            int x = std::get<1>(params);
+            int y = std::get<2>(params);
+            int param1 = std::get<3>(params);
+            int param2 = std::get<4>(params);
+
+            outFile << type << " " << x << " " << y << " " << param1 << " " << param2 << "\n";
+        }
+
+        outFile.close();
+        std::cout << "Blackboard saved to " << filename << ".\n";
+    }
+
+    void load(const std::string& filename) {
+        // Open file in read mode
+        std::ifstream inFile(filename);
+        if (!inFile.is_open()) {
+            std::cout << "File not found. Creating a new file: " << filename << ".\n";
+            std::ofstream outFile(filename);  // Create new file
+            outFile.close();
+            return;
+        }
+
+        // Clear the current board and shapes
+        clear();
+
+        std::string type;
+        int x, y, param1, param2;
+
+        // Load each shape from the file and add to the board
+        while (inFile >> type) {
+            std::cout << "Loaded shape: " << type << " at (" << x << ", " << y << ") with params: " << param1 << " " << param2 << "\n";
+            if (type == "Triangle") {
+                inFile >> x >> y >> param1;
+                std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
+                addShape(triangle);
+            } else if (type == "Circle") {
+                inFile >> x >> y >> param1;
+                std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
+                addShape(circle);
+            } else if (type == "Rectangle") {
+                inFile >> x >> y >> param1 >> param2;
+                std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
+                addShape(rectangle);
+            } else if (type == "Line") {
+                inFile >> x >> y >> param1 >> param2;
+                std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
+                addShape(line);
+            }
+        }
+
+        inFile.close();
+        std::cout << "Blackboard loaded from " << filename << ".\n";
+    }
+
+};
 
 class CommandLine {
     Board& board;
@@ -277,13 +346,24 @@ public:
     // Parse and execute a command
     void executeCommand(const std::string& command) {
         std::istringstream ss(command);
-        std::string action, shapeType;
+        std::string action, shapeType, filename;
         int x, y, param1, param2 = 0;
         bool isVertical = false;
 
-        ss >> action >> shapeType;
+        ss >> action ;
+
+        if (action == "save") {
+            ss >> filename;
+            board.save(filename);
+            return;
+        } else if (action == "load") {
+            ss >> filename;
+            board.load(filename);
+            return;
+        }
 
         if (action == "add") {
+            ss >> shapeType;
             if (shapeType == "triangle") {
                 ss >> x >> y >> param1;  // x, y, height
                 std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
@@ -322,7 +402,11 @@ public:
         } else if (action == "undo") {
             board.undo();
             std::cout << "\n";
-        }
+         } //else if (action == "save") {
+        //     ss >> filename;
+        //     board.save(filename);
+        //     std::cout << "\n";
+        // }
         else {
             std::cout << "Unknown command.\n";
         }
