@@ -24,7 +24,6 @@ public:
 
 // Struct to define the board
 
-
 class Triangle: public Shape {
     int height;
 public:
@@ -222,6 +221,12 @@ public:
         }
     }
 
+    void undoClear() {
+        for (auto& row : grid) {
+            std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
+        }
+    }
+
     void draw() {
         for (const auto& shape : shapes) {
             shape->draw(grid);
@@ -262,7 +267,7 @@ public:
         if (!shapes.empty()) {
             shapes.pop_back();  // Remove the last added shape
             shapesParams.pop_back();  // Remove its parameters
-            clear();
+            undoClear();
             std::cout << "Last shape removed from the board.\n";
             draw();  // Redraw the board with remaining shapes
         } else {
@@ -364,26 +369,67 @@ public:
 
         if (action == "add") {
             ss >> shapeType;
-            if (shapeType == "triangle") {
-                ss >> x >> y >> param1;  // x, y, height
-                std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
-                board.addShape(triangle);
-                std::cout << "Triangle is succesfully added \n";
+            if (shapeType == "triangle" ) {
+                if (ss >> x >> y >> param1) {
+                    if (x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) {
+                        // x, y, height
+                        std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
+                        board.addShape(triangle);
+                        std::cout << "Triangle is succesfully added \n";
+                    }
+                    else {
+                        std::cout << "Error: Triangle's position is out of the board boundaries.\n";
+                    }
+                }
+                else {
+                    std::cout << "Error: Missing parameters for triangle. Expected x, y, height. Or figure out of the board\n";
+                }
             } else if (shapeType == "circle") {
-                ss >> x >> y >> param1;  // x, y, radius
-                std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
-                board.addShape(circle);
-                std::cout << "Circle is succesfully added \n";
+                if (ss >> x >> y >> param1 ) {
+                    if (x - param1 >= 0 && x + param1 <= BOARD_WIDTH && y - param1 >= 0 && y + param1 <= BOARD_HEIGHT) {
+                    // x, y, radius
+                    std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
+                    board.addShape(circle);
+                    std::cout << "Circle is succesfully added \n";
+                }
+                    else {
+                        std::cout << "Error: Circle's position or radius is out of the board boundaries.\n";
+                    }
+                }
+                else {
+                    std::cout << "Error: Missing parameters for circle. Expected x, y, radius.\n";
+                }
             } else if (shapeType == "rectangle") {
-                ss >> x >> y >> param1 >> param2;  // x, y, height, weight
-                std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
-                board.addShape(rectangle);
-                std::cout << "Rectangle is succesfully added \n";
+                if (ss >> x >> y >> param1 >> param2) {
+                    if (x >= 0 && x + param1 <= BOARD_WIDTH && y >= 0 && y + param2 <= BOARD_HEIGHT) {
+                        // x, y, height, weight
+                        std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
+                        board.addShape(rectangle);
+                        std::cout << "Rectangle is succesfully added \n";
+                    }
+                    else {
+                        std::cout << "Error: Line's position or size is out of the board boundaries.\n";
+                    }
+                }
+                else {
+                    std::cout << "Error: Missing parameters for rectangle. Expected x, y, height, weight.\n";
+                }
             } else if (shapeType == "line") {
-                ss >> x >> y >> param1 >> param2;  // x1, y1, x2, y2
-                std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
-                board.addShape(line);
-                std::cout << "Line is succesfully added \n";
+                if (ss >> x >> y >> param1 >> param2) {
+                    // x1, y1, x2, y2
+                    if((x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) || (param1 >= 0 && param1 <= BOARD_WIDTH && param2 >= 0 && param2 <= BOARD_HEIGHT)) {
+                        std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
+                        board.addShape(line);
+                        std::cout << "Line is succesfully added \n";
+                    }
+                    else {
+                        std::cout << "Error: Line's start or end position is out of the board boundaries.\n";
+                    }
+
+                }
+                else {
+                    std::cout << "Error: Missing parameters for line. Expected x1, y1, x2, y2.\n";
+                }
             }
             else {
                 std::cout << "Unknown shape type \n";
@@ -402,11 +448,7 @@ public:
         } else if (action == "undo") {
             board.undo();
             std::cout << "\n";
-         } //else if (action == "save") {
-        //     ss >> filename;
-        //     board.save(filename);
-        //     std::cout << "\n";
-        // }
+         }
         else {
             std::cout << "Unknown command.\n";
         }
