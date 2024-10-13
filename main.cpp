@@ -18,8 +18,8 @@ protected:
     std::string color;
 
 public:
-    Shape(int x, int y, const std::string& fill = "none", const std::string& color = "none" )
-    : x(x), y(y), fillType(fill), color(color), shapeID(-1) {}
+    Shape(int x, int y, const std::string& fillType, const std::string& color )
+    : x(x), y(y), fillType(fillType), color(color), shapeID(-1) {}
     virtual ~Shape() = default;
 
     virtual void draw(std::vector<std::vector<char>>& grid) const = 0;
@@ -55,6 +55,14 @@ public:
     bool isFramed() const {
         return fillType == "frame";
     }
+
+    std::string getColorCode() const {
+        if (color == "red") return "\033[31m[0m";
+        else if (color == "green") return "\033[32m[0m";
+        else if (color == "blue") return "\033[34m[0m";
+        else if (color == "yellow") return "\033[33m[0m";
+        return "\033[0m";  // Default/reset color
+    }
 };
 
 
@@ -69,8 +77,10 @@ public:
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
+        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
+
         if (height <= 0) return; // Ensure the triangle height is positive and sensible
-        char colorSymbol = color.empty() ? '*' : color[0];
+        // char colorSymbol = color.empty() ? '*' : color[0];
         for (int i = 0; i < height; ++i) {
             int leftMost = x - i; // Calculate the starting position
             int rightMost = x + i; // Calculate the ending position
@@ -82,17 +92,17 @@ public:
                     // If the shape should be filled, fill between leftMost and rightMost
                     for (int j = leftMost; j <= rightMost; ++j) {
                         if (j >= 0 && j < BOARD_WIDTH) {
-                            grid[posY][j] = colorSymbol; // Fill the triangle with the color symbol
+                            grid[posY][j] = colorChar; // Fill the triangle with the color symbol
                         }
                     }
                 }
 
                 if (fillType == "frame" || fillType == "none") {
                     if (leftMost >= 0 && leftMost < BOARD_WIDTH) // Check bounds for left most position
-                        grid[posY][leftMost] = colorSymbol;
+                        grid[posY][leftMost] = colorChar;
                     // grid[posY][leftMost] = '*';
                     if (rightMost >= 0 && rightMost < BOARD_WIDTH && leftMost != rightMost)
-                        grid[posY][rightMost] = colorSymbol;
+                        grid[posY][rightMost] = colorChar;
                     // grid[posY][rightMost] = '*';
                 }
             }
@@ -104,7 +114,7 @@ public:
             int baseY = y + height - 1;
             if (baseX >= 0 && baseX < BOARD_WIDTH && baseY < BOARD_HEIGHT) // Check bounds for each position on the base
                 // grid[baseY][baseX] = '*';
-                grid[baseY][baseX] = colorSymbol;
+                grid[baseY][baseX] = colorChar;
         }
     }
 
@@ -149,8 +159,9 @@ public:
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (radius <= 0) return;
 
+        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
         int r2 = radius * radius;  // Precompute radius squared to compare distances
-        char colorSymbol = color.empty() ? '*' : color[0];
+        // char colorSymbol = color.empty() ? '*' : color[0];
         for (int i = 0; i < BOARD_HEIGHT; ++i) {
             for (int j = 0; j < BOARD_WIDTH; ++j) {
                 // Calculate the squared distance from the point (i, j) to the center (x, y)
@@ -161,12 +172,12 @@ public:
                 if (fillType == "fill") {
                     // Fill the entire circle area
                     if (distSquared <= r2) {
-                        grid[i][j] = colorSymbol;
+                        grid[i][j] = colorChar;
                     }
                 } else if (fillType == "frame" || fillType == "none") {
                     // Draw the border (circle frame)
                     if (distSquared >= (r2 - radius) && distSquared <= (r2 + radius)) {
-                        grid[i][j] = colorSymbol;
+                        grid[i][j] = colorChar;
                     }
                 }
             }
@@ -202,7 +213,7 @@ public:
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (width <= 0 || height <= 0) return;
 
-        char colorSymbol = color.empty() ? '*' : color[0];
+        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
 
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
@@ -211,13 +222,13 @@ public:
 
                 if (fillType == "fill"){ }
                 if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                    grid[gridY][gridX] = colorSymbol; // Fill the rectangle with color
+                    grid[gridY][gridX] = colorChar; // Fill the rectangle with color
                 }
                 else if (fillType == "frame" || fillType == "none") {
                     // Draw the top and bottom borders
                     if (i == 0 || i == height - 1) {
                         if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                            grid[gridY][gridX] = colorSymbol; // Draw top and bottom edges
+                            grid[gridY][gridX] = colorChar; // Draw top and bottom edges
                         }
                     }
 
@@ -231,7 +242,7 @@ public:
                     // Draw the left and right borders
                     else if (j == 0 || j == width - 1) {
                         if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                            grid[gridY][gridX] = colorSymbol; // Draw left and right edges
+                            grid[gridY][gridX] = colorChar; // Draw left and right edges
                         }
                     }
                 }
@@ -272,7 +283,7 @@ public:
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
-        char colorSymbol = color.empty() ? '*' : color[0];
+        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
 
         int dx = abs(x2 - x1);
         int dy = abs(y2 - y1);
@@ -286,7 +297,7 @@ public:
         while (true) {
             // Ensure the point is within grid bounds
             if (x >= 0 && x < BOARD_WIDTH && y >= 0 && y < BOARD_HEIGHT) {
-                grid[y][x] = colorSymbol;
+                grid[y][x] = colorChar;
             }
 
             // Check if we reached the endpoint
@@ -355,17 +366,14 @@ private:
 public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
-    void print() {
-        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
-        for (auto& row : grid) {
-            std::cout << "|";  // Left border
-            for (char c : row) {
-                std::cout << c;
-            }
-            std::cout << "|";  // Right border
-            std::cout << "\n";
+    void printColoredChar(char c) {
+        switch (c) {
+            case 'r': std::cout << "\033[31m*\033[0m"; break;  // Red
+            case 'g': std::cout << "\033[32m*\033[0m"; break;  // Green
+            case 'b': std::cout << "\033[34mb\033[0m"; break;  // Blue
+            case 'y': std::cout << "\033[33my\033[0m"; break;  // Yellow
+            default: std::cout << c;  // No color, just print the char
         }
-        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
     }
 
     bool isOccupied(int x, int y) const {
@@ -376,28 +384,28 @@ public:
         }
         return false; // No shape contains the point
     }
-    void addCircle(int x, int y, int radius, const std::string& fill = "none", const std::string& color = "none") {
+    void addCircle(int x, int y, int radius, const std::string& fill , const std::string& color ) {
         auto circle = std::make_shared<Circle>(x, y, radius, fill, color);
         circle->setID(currentShapeID++);
         shapes.push_back(circle);
     }
 
     // Add a Rectangle to the board
-    void addRectangle(int x, int y, int width, int height, const std::string& fill = "none", const std::string& color = "none") {
+    void addRectangle(int x, int y, int width, int height, const std::string& fill , const std::string& color ) {
         auto rectangle = std::make_shared<Rectangle>(x, y, width, height, fill, color);
         rectangle->setID(currentShapeID++);
         shapes.push_back(rectangle);
     }
 
     // Add a Triangle to the board
-    void addTriangle(int x, int y, int height, const std::string& fill = "none", const std::string& color = "none") {
+    void addTriangle(int x, int y, int height, const std::string& fill , const std::string& color ) {
         auto triangle = std::make_shared<Triangle>(x, y, height, fill, color);
         triangle->setID(currentShapeID++);
         shapes.push_back(triangle);
     }
 
     // Add a Line to the board
-    void addLine(int x1, int y1, int x2, int y2, const std::string& fill = "none", const std::string& color = "none") {
+    void addLine(int x1, int y1, int x2, int y2, const std::string& fill , const std::string& color ) {
         auto line = std::make_shared<Line>(x1, y1, x2, y2, fill, color);
         line->setID(currentShapeID++);
         shapes.push_back(line);
@@ -410,6 +418,8 @@ public:
             std::fill(row.begin(), row.end(), ' ');
         }
 
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
+
         // Draw each shape on the grid
         for (const auto& shape : shapes) {
             shape->draw(grid);
@@ -417,11 +427,14 @@ public:
 
         // Print the grid to the console
         for (const auto& row : grid) {
+            std::cout << "|";
             for (char cell : row) {
-                std::cout << cell;
+                printColoredChar(cell);  // Print each cell, which may contain color codes
             }
+            std::cout << "|";
             std::cout << '\n';
         }
+        std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
     }
 
     void clear() {
@@ -437,13 +450,6 @@ public:
         for (auto& row : grid) {
             std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
         }
-    }
-
-    void draw() {
-        for (const auto& shape : shapes) {
-            shape->draw(grid);
-        }
-        print();
     }
 
     void showShapesList() {
@@ -471,10 +477,10 @@ public:
     }
 
     void availableShapes() const {
-        std::cout << "Triangle: coordinates, height\n";
-        std::cout << "Circle: coordinates, radius\n";
-        std::cout << "Rectangle: coordinates, height, width\n";
-        std::cout << "Line: start coordinates, end coordinates\n";
+        std::cout << "Triangle: fill, color, coordinates, height\n";
+        std::cout << "Circle: fill, color, coordinates, radius\n";
+        std::cout << "Rectangle: fill, color, coordinates, height, width\n";
+        std::cout << "Line: fill, color, start coordinates, end coordinates\n";
     }
 
     void undo() {
@@ -483,7 +489,7 @@ public:
             shapesParams.pop_back();  // Remove its parameters
             undoClear();
             std::cout << "Last shape removed from the board.\n";
-            draw();  // Redraw the board with remaining shapes
+            drawBoard();  // Redraw the board with remaining shapes
         } else {
             std::cout << "No shapes to remove.\n";
         }
@@ -684,7 +690,7 @@ public:
                 if (ss >> x >> y >> param1) {
                     if (x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) {
                         // x, y, height
-                        std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
+                        std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1, fill, color);
                         board.addTriangle(x, y, param1, fill, color);
                         std::cout << "Triangle is succesfully added \n";
                     }
@@ -696,10 +702,10 @@ public:
                     std::cout << "Error: Missing parameters for triangle. Expected x, y, height. Or figure out of the board\n";
                 }
             } else if (shapeType == "circle") {
-                if (ss >> x >> y >> param1 ) {
+                if (ss >> x >> y >> param1) {
                     if (x - param1 >= 0 || x + param1 <= BOARD_WIDTH || y - param1 >= 0 || y + param1 <= BOARD_HEIGHT) {
                     // x, y, radius
-                    std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
+                    std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1, fill, color);
                     board.addCircle(x, y, param1, fill, color);
                     std::cout << "Circle is succesfully added \n";
                 }
@@ -714,7 +720,7 @@ public:
                 if (ss >> x >> y >> param1 >> param2) {
                     if (x >= 0 && x + param1 <= BOARD_WIDTH && y >= 0 && y + param2 <= BOARD_HEIGHT) {
                         // x, y, height, weight
-                        std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
+                        std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2, fill, color);
                         board.addRectangle(x, y, param1, param2, fill, color);
                         std::cout << "Rectangle is succesfully added \n";
                     }
@@ -729,7 +735,7 @@ public:
                 if (ss >> x >> y >> param1 >> param2) {
                     // x1, y1, x2, y2
                     if((x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) || (param1 >= 0 && param1 <= BOARD_WIDTH && param2 >= 0 && param2 <= BOARD_HEIGHT)) {
-                        std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
+                        std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2, fill, color);
                         board.addLine(x, y, param1, param2, fill, color);
                         std::cout << "Line is succesfully added \n";
                     }
@@ -746,7 +752,7 @@ public:
                 std::cout << "Unknown shape type \n";
             }
         } else if (action == "draw"){
-            board.draw();
+            board.drawBoard();
         } else if (action == "clear"){
             board.clear();
             std::cout << "Board is succesfully cleared \n";
