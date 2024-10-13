@@ -9,11 +9,17 @@
 const int BOARD_WIDTH = 80;
 const int BOARD_HEIGHT = 25;
 
+
 class Shape {
 protected:
     int x, y;
+    int shapeID;
+    std::string fillType;
+    std::string color;
+
 public:
-    Shape(int x, int y) : x(x), y(y) {}
+    Shape(int x, int y, const std::string& fill = "none", const std::string& color = "none" )
+    : x(x), y(y), fillType(fill), color(color), shapeID(-1) {}
     virtual ~Shape() = default;
 
     virtual void draw(std::vector<std::vector<char>>& grid) const = 0;
@@ -25,38 +31,80 @@ public:
     void setID(int id) { shapeID = id; }
     int getID() const { return shapeID; }
 
-private:
-    int shapeID;
+    void setFillType(const std::string& fill) {
+        fillType = fill;
+    }
+
+    void setColor(const std::string& newColor) {
+        color = newColor;
+    }
+
+    std::string getColor() const {
+        return color;
+    }
+
+    std::string getFill() const {
+        return fillType;
+    }
+
+    bool isFilled() const {
+        return fillType == "fill";
+    }
+
+    // Check if the shape should be framed
+    bool isFramed() const {
+        return fillType == "frame";
+    }
 };
 
 
 class Triangle: public Shape {
     int height;
 public:
-    Triangle(int x, int y, int height) : Shape(x, y), height(height) {}
+    Triangle(int x, int y, int height, const std::string& fill = "none", const std::string& color = "none")
+    : Shape(x, y, fill, color), height(height) {}
 
+    void setColor(const std::string& newColor) {
+        color = newColor;
+    }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (height <= 0) return; // Ensure the triangle height is positive and sensible
+        char colorSymbol = color.empty() ? '*' : color[0];
         for (int i = 0; i < height; ++i) {
             int leftMost = x - i; // Calculate the starting position
             int rightMost = x + i; // Calculate the ending position
             int posY = y + i; // Calculate the vertical position
             // Draw only the edges/border of the triangle
+
             if (posY < BOARD_HEIGHT) {
-                if (leftMost >= 0 && leftMost < BOARD_WIDTH) // Check bounds for left most position
-                    grid[posY][leftMost] = '*';
-                if (rightMost >= 0 && rightMost < BOARD_WIDTH && leftMost != rightMost)
-                    // Check bounds for right most position
-                        grid[posY][rightMost] = '*';
+                if (fillType == "fill") {
+                    // If the shape should be filled, fill between leftMost and rightMost
+                    for (int j = leftMost; j <= rightMost; ++j) {
+                        if (j >= 0 && j < BOARD_WIDTH) {
+                            grid[posY][j] = colorSymbol; // Fill the triangle with the color symbol
+                        }
+                    }
+                }
+
+                if (fillType == "frame" || fillType == "none") {
+                    if (leftMost >= 0 && leftMost < BOARD_WIDTH) // Check bounds for left most position
+                        grid[posY][leftMost] = colorSymbol;
+                    // grid[posY][leftMost] = '*';
+                    if (rightMost >= 0 && rightMost < BOARD_WIDTH && leftMost != rightMost)
+                        grid[posY][rightMost] = colorSymbol;
+                    // grid[posY][rightMost] = '*';
+                }
             }
         }
+
         // Draw the base of the triangle separately
         for (int j = 0; j < 2 * height - 1; ++j) {
             int baseX = x - height + 1 + j;
             int baseY = y + height - 1;
             if (baseX >= 0 && baseX < BOARD_WIDTH && baseY < BOARD_HEIGHT) // Check bounds for each position on the base
-                grid[baseY][baseX] = '*';
+                // grid[baseY][baseX] = '*';
+                grid[baseY][baseX] = colorSymbol;
         }
     }
 
@@ -91,12 +139,18 @@ class Circle : public Shape {
     int radius;
 
 public:
-    Circle(int x, int y, int radius) : Shape(x, y), radius(radius) {}
+    Circle(int x, int y, int radius, const std::string& fill = "none", const std::string& color = "none")
+    : Shape(x, y, fill, color), radius(radius) {}
+
+    void setColor(const std::string& newColor) {
+        color = newColor;
+    }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (radius <= 0) return;
 
         int r2 = radius * radius;  // Precompute radius squared to compare distances
+        char colorSymbol = color.empty() ? '*' : color[0];
         for (int i = 0; i < BOARD_HEIGHT; ++i) {
             for (int j = 0; j < BOARD_WIDTH; ++j) {
                 // Calculate the squared distance from the point (i, j) to the center (x, y)
@@ -104,9 +158,16 @@ public:
                 int dy = i - y;
                 int distSquared = dx * dx + dy * dy;
 
-                // If the squared distance is close to the radius squared, draw the border
-                if (distSquared >= (r2 - radius) && distSquared <= (r2 + radius)) {
-                    grid[i][j] = '*';
+                if (fillType == "fill") {
+                    // Fill the entire circle area
+                    if (distSquared <= r2) {
+                        grid[i][j] = colorSymbol;
+                    }
+                } else if (fillType == "frame" || fillType == "none") {
+                    // Draw the border (circle frame)
+                    if (distSquared >= (r2 - radius) && distSquared <= (r2 + radius)) {
+                        grid[i][j] = colorSymbol;
+                    }
                 }
             }
         }
@@ -131,26 +192,47 @@ class Rectangle : public Shape {
     int height;
 
 public:
-    Rectangle(int x, int y, int width, int height) : Shape(x, y), width(width), height(height) {}
+    Rectangle(int x, int y, int width, int height, const std::string& fill = "none", const std::string& color = "none")
+    : Shape(x, y, fill, color), width(width), height(height) {}
+
+    void setColor(const std::string& newColor) {
+        color = newColor;
+    }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (width <= 0 || height <= 0) return;
+
+        char colorSymbol = color.empty() ? '*' : color[0];
 
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
                 int gridX = x + j; // Calculate grid x position
                 int gridY = y + i; // Calculate grid y position
 
-                // Draw the top and bottom borders
-                if (i == 0 || i == height - 1) {
-                    if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                        grid[gridY][gridX] = '*'; // Draw top and bottom edges
-                    }
+                if (fillType == "fill"){ }
+                if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                    grid[gridY][gridX] = colorSymbol; // Fill the rectangle with color
                 }
-                // Draw the left and right borders
-                else if (j == 0 || j == width - 1) {
-                    if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                        grid[gridY][gridX] = '*'; // Draw left and right edges
+                else if (fillType == "frame" || fillType == "none") {
+                    // Draw the top and bottom borders
+                    if (i == 0 || i == height - 1) {
+                        if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                            grid[gridY][gridX] = colorSymbol; // Draw top and bottom edges
+                        }
+                    }
+
+                    // // Draw the top and bottom borders
+                    // if (i == 0 || i == height - 1) {
+                    //     if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                    //         grid[gridY][gridX] = '*'; // Draw top and bottom edges
+                    //     }
+                    // }
+
+                    // Draw the left and right borders
+                    else if (j == 0 || j == width - 1) {
+                        if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
+                            grid[gridY][gridX] = colorSymbol; // Draw left and right edges
+                        }
                     }
                 }
             }
@@ -182,9 +264,16 @@ private:
     int x1, y1, x2, y2;
 
 public:
-    Line(int startX, int startY, int endX, int endY) : Shape(startX, startY), x1(startX), y1(startY), x2(endX), y2(endY) {}
+    Line(int startX, int startY, int endX, int endY, const std::string& fill = "none", const std::string& color = "none")
+    : Shape(startX, startY, fill, color), x1(startX), y1(startY), x2(endX), y2(endY) {}
+
+    void setColor(const std::string& newColor) {
+        color = newColor;
+    }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
+        char colorSymbol = color.empty() ? '*' : color[0];
+
         int dx = abs(x2 - x1);
         int dy = abs(y2 - y1);
         int sx = (x1 < x2) ? 1 : -1; // Step in x
@@ -197,7 +286,7 @@ public:
         while (true) {
             // Ensure the point is within grid bounds
             if (x >= 0 && x < BOARD_WIDTH && y >= 0 && y < BOARD_HEIGHT) {
-                grid[y][x] = '*';
+                grid[y][x] = colorSymbol;
             }
 
             // Check if we reached the endpoint
@@ -279,25 +368,60 @@ public:
         std::cout << std::string(BOARD_WIDTH + 2, '-') << std::endl;
     }
 
-    bool addShape(const std::shared_ptr<Shape>& shape) {
-        auto shapeParams = shape->getParameters();
+    bool isOccupied(int x, int y) const {
+        for (const auto& shape : shapes) {
+            if (shape->containsPoint(x, y)) {
+                return true; // If any shape contains the point, it's occupied
+            }
+        }
+        return false; // No shape contains the point
+    }
+    void addCircle(int x, int y, int radius, const std::string& fill = "none", const std::string& color = "none") {
+        auto circle = std::make_shared<Circle>(x, y, radius, fill, color);
+        circle->setID(currentShapeID++);
+        shapes.push_back(circle);
+    }
 
-        for (const auto& params : shapesParams) {
-            if (std::get<1>(params) == std::get<0>(shapeParams) &&  // Shape type
-                std::get<2>(params) == std::get<1>(shapeParams) &&  // x
-                std::get<3>(params) == std::get<2>(shapeParams) &&  // y
-                std::get<4>(params) == std::get<3>(shapeParams) &&  // param1
-                std::get<5>(params) == std::get<4>(shapeParams)) {  // param2
-                std::cout << "Shape with the same parameters already exists.\n";
-                return false;
-                }
+    // Add a Rectangle to the board
+    void addRectangle(int x, int y, int width, int height, const std::string& fill = "none", const std::string& color = "none") {
+        auto rectangle = std::make_shared<Rectangle>(x, y, width, height, fill, color);
+        rectangle->setID(currentShapeID++);
+        shapes.push_back(rectangle);
+    }
+
+    // Add a Triangle to the board
+    void addTriangle(int x, int y, int height, const std::string& fill = "none", const std::string& color = "none") {
+        auto triangle = std::make_shared<Triangle>(x, y, height, fill, color);
+        triangle->setID(currentShapeID++);
+        shapes.push_back(triangle);
+    }
+
+    // Add a Line to the board
+    void addLine(int x1, int y1, int x2, int y2, const std::string& fill = "none", const std::string& color = "none") {
+        auto line = std::make_shared<Line>(x1, y1, x2, y2, fill, color);
+        line->setID(currentShapeID++);
+        shapes.push_back(line);
+    }
+
+    // Method to draw all shapes on the board
+    void drawBoard() {
+        // Clear the grid before drawing
+        for (auto& row : grid) {
+            std::fill(row.begin(), row.end(), ' ');
         }
 
-        shape->setID(currentShapeID);
-        shapesParams.push_back(std::make_tuple(currentShapeID++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
-        shapes.push_back(shape);
-        currentShapeID++;
-        return true;
+        // Draw each shape on the grid
+        for (const auto& shape : shapes) {
+            shape->draw(grid);
+        }
+
+        // Print the grid to the console
+        for (const auto& row : grid) {
+            for (char cell : row) {
+                std::cout << cell;
+            }
+            std::cout << '\n';
+        }
     }
 
     void clear() {
@@ -401,7 +525,7 @@ public:
         // Clear the current board and shapes
         clear();
 
-        std::string type;
+        std::string type, fill, color;
         int x, y, param1, param2;
 
         // Load each shape from the file and add to the board
@@ -410,19 +534,19 @@ public:
             if (type == "Triangle") {
                 inFile >> x >> y >> param1;
                 std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
-                addShape(triangle);
+                addTriangle(x, y, param1, fill, color);
             } else if (type == "Circle") {
                 inFile >> x >> y >> param1;
                 std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
-                addShape(circle);
+                addCircle(x, y, param1, fill, color);
             } else if (type == "Rectangle") {
                 inFile >> x >> y >> param1 >> param2;
                 std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
-                addShape(rectangle);
+                addRectangle(x, y, param1, param2, fill, color);
             } else if (type == "Line") {
-                inFile >> x >> y >> param1 >> param2;
+                inFile >> x >> y >> param1 >> param2 >> fill >> color;
                 std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
-                addShape(line);
+                addLine(x, y, param1, param2, fill, color);
             }
         }
 
@@ -536,7 +660,7 @@ public:
     // Parse and execute a command
     void executeCommand(const std::string& command) {
         std::istringstream ss(command);
-        std::string action, shapeType, filename;
+        std::string action, shapeType, fill, color, filename;
         int x, y, param1, param2 = 0;
         bool isVertical = false;
 
@@ -554,12 +678,14 @@ public:
 
         if (action == "add") {
             ss >> shapeType;
+            ss >> fill >> color;
+
             if (shapeType == "triangle" ) {
                 if (ss >> x >> y >> param1) {
                     if (x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) {
                         // x, y, height
                         std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
-                        board.addShape(triangle);
+                        board.addTriangle(x, y, param1, fill, color);
                         std::cout << "Triangle is succesfully added \n";
                     }
                     else {
@@ -574,7 +700,7 @@ public:
                     if (x - param1 >= 0 || x + param1 <= BOARD_WIDTH || y - param1 >= 0 || y + param1 <= BOARD_HEIGHT) {
                     // x, y, radius
                     std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
-                    board.addShape(circle);
+                    board.addCircle(x, y, param1, fill, color);
                     std::cout << "Circle is succesfully added \n";
                 }
                     else {
@@ -589,7 +715,7 @@ public:
                     if (x >= 0 && x + param1 <= BOARD_WIDTH && y >= 0 && y + param2 <= BOARD_HEIGHT) {
                         // x, y, height, weight
                         std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
-                        board.addShape(rectangle);
+                        board.addRectangle(x, y, param1, param2, fill, color);
                         std::cout << "Rectangle is succesfully added \n";
                     }
                     else {
@@ -604,7 +730,7 @@ public:
                     // x1, y1, x2, y2
                     if((x >= 0 && x <= BOARD_WIDTH && y >= 0 && y <= BOARD_HEIGHT) || (param1 >= 0 && param1 <= BOARD_WIDTH && param2 >= 0 && param2 <= BOARD_HEIGHT)) {
                         std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
-                        board.addShape(line);
+                        board.addLine(x, y, param1, param2, fill, color);
                         std::cout << "Line is succesfully added \n";
                     }
                     else {
