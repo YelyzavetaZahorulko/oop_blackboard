@@ -19,10 +19,16 @@ public:
     virtual void draw(std::vector<std::vector<char>>& grid) const = 0;
 
     virtual std::tuple<std::string, int, int, int, int, bool> getParameters() const = 0;
+
+    virtual bool containsPoint(int px, int py) const = 0;
+
+    void setID(int id) { shapeID = id; }
+    int getID() const { return shapeID; }
+
+private:
+    int shapeID;
 };
 
-
-// Struct to define the board
 
 class Triangle: public Shape {
     int height;
@@ -54,6 +60,28 @@ public:
         }
     }
 
+    bool containsPoint(int px, int py) const override {
+        // Check if the point is on the left or right edge
+        for (int i = 0; i < height; ++i) {
+            int leftMost = x - i;
+            int rightMost = x + i;
+            int posY = y + i;
+            if (posY == py) {
+                if (px == leftMost || px == rightMost) {
+                    return true;
+                }
+            }
+        }
+        // Check the base
+        int baseY = y + height - 1;
+        if (py == baseY) {
+            if (px >= (x - height + 1) && px <= (x + height - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
         return std::make_tuple("Triangle", x, y, height, 0, false);
     }
@@ -82,6 +110,14 @@ public:
                 }
             }
         }
+    }
+
+    bool containsPoint(int px, int py) const override {
+        int dx = px - x;
+        int dy = py - y;
+        int distSquared = dx * dx + dy * dy;
+        int r2 = radius * radius;
+        return (distSquared >= (r2 - radius) && distSquared <= (r2 + radius));
     }
 
     // Return the shape's parameters as a tuple
@@ -119,6 +155,20 @@ public:
                 }
             }
         }
+    }
+
+    bool containsPoint(int px, int py) const override {
+        // Check if the point is on the top or bottom edge
+        if (py == y || py == y + height - 1) {
+            if (px >= x && px < x + width) {
+                return true;
+            }
+        }
+        // Check the left and right edges
+        if ((px == x || px == x + width - 1) && py >= y && py < y + height) {
+            return true;
+        }
+        return false;
     }
 
     // Method to return the shape's parameters
@@ -167,6 +217,40 @@ public:
         }
     }
 
+    bool containsPoint(int px, int py) const override {
+        // Implement Bresenham's line algorithm to check if the point is on the line
+        int dx = abs(x2 - x1);
+        int dy = abs(y2 - y1);
+        int sx = (x1 < x2) ? 1 : -1;
+        int sy = (y1 < y2) ? 1 : -1;
+        int err = dx - dy;
+
+        int x = x1;
+        int y = y1;
+
+        while (true) {
+            if (x == px && y == py) {
+                return true;
+            }
+
+            if (x == x2 && y == y2) {
+                break;
+            }
+
+            int e2 = 2 * err;
+            if (e2 > -dy) {
+                err -= dy;
+                x += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y += sy;
+            }
+        }
+
+        return false;
+    }
+
     std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
         return std::make_tuple("Line", x1, y1, x2, y2, false);
     }
@@ -177,7 +261,8 @@ private:
     std::vector<std::vector<char>> grid;
     std::vector<std::tuple<int, std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
     std::vector<std::shared_ptr<Shape>> shapes;
-    int currentShapeId = 1;
+    int currentShapeID = 1;
+    int selectedShapeID = -1;
 public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
@@ -208,14 +293,17 @@ public:
                 }
         }
 
-        shapesParams.push_back(std::make_tuple(currentShapeId++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
+        shape->setID(currentShapeID);
+        shapesParams.push_back(std::make_tuple(currentShapeID++, std::get<0>(shapeParams), std::get<1>(shapeParams), std::get<2>(shapeParams), std::get<3>(shapeParams), std::get<4>(shapeParams), std::get<5>(shapeParams)));
         shapes.push_back(shape);
+        currentShapeID++;
         return true;
     }
 
     void clear() {
         shapes.clear();
         shapesParams.clear();
+        selectedShapeID = -1;
         for (auto& row : grid) {
             std::fill(row.begin(), row.end(), ' '); // Fill each row with empty spaces
         }
@@ -252,6 +340,8 @@ public:
                 std::cout << ", Radius: " << param1 << "\n";
             } else if (shapeType == "Rectangle") {
                 std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
+            } else if (shapeType == "Line") {
+                std::cout << ", X2: " << param1 << ", Y2: " << param2 << "\n";
             }
         }
     }
@@ -340,6 +430,101 @@ public:
         std::cout << "Blackboard loaded from " << filename << ".\n";
     }
 
+    void select() {
+        std::cout << "Select by ID or coordinates? (id/coord): ";
+        std::string choice;
+        std::cin >> choice;
+
+        if (choice == "id") {
+            int id;
+            std::cout << "Enter Shape ID: ";
+            std::cin >> id;
+            bool found = false;
+            for (const auto& params : shapesParams) {
+                if (std::get<0>(params) == id) {
+                    selectedShapeID = id;
+                    printShapeInfo(params);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                std::cout << "Shape with ID " << id << " not found.\n";
+            }
+        }
+        else if (choice == "coord") {
+            int px, py;
+            std::cout << "Enter X coordinate: ";
+            std::cin >> px;
+            std::cout << "Enter Y coordinate: ";
+            std::cin >> py;
+
+            bool found = false;
+            for (int i = shapes.size() - 1; i >= 0; --i) {
+                if (shapes[i]->containsPoint(px, py)) {
+                    selectedShapeID = std::get<0>(shapesParams[i]);
+                    printShapeInfo(shapesParams[i]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                std::cout << "No shape occupies the point (" << px << ", " << py << ").\n";
+            }
+        }
+        else {
+            std::cout << "Invalid selection option.\n";
+        }
+    }
+
+    // for select method
+    void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool>& params) const {
+        int id = std::get<0>(params);
+        std::string shapeType = std::get<1>(params);
+        int x = std::get<2>(params);
+        int y = std::get<3>(params);
+        int param1 = std::get<4>(params);
+        int param2 = std::get<5>(params);
+
+        std::cout << "Selected Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
+
+        if (shapeType == "Triangle") {
+            std::cout << ", Height: " << param1 << "\n";
+        }
+        else if (shapeType == "Circle") {
+            std::cout << ", Radius: " << param1 << "\n";
+        }
+        else if (shapeType == "Rectangle") {
+            std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
+        }
+        else if (shapeType == "Line") {
+            std::cout << ", End X: " << param1 << ", End Y: " << param2 << "\n";
+        }
+    }
+
+    void removeShape() {
+        if (selectedShapeID == -1) {
+            std::cout << "No shape selected to remove.\n";
+            return;
+        }
+
+        bool found = false;
+        for (int i = 0; i < shapesParams.size(); ++i) {
+            if (std::get<0>(shapesParams[i]) == selectedShapeID) {
+                shapesParams.erase(shapesParams.begin() + i);
+                shapes.erase(shapes.begin() + i); // Remove the shape from the shapes vector
+                std::cout << "Shape with ID " << selectedShapeID << " removed successfully.\n";
+                selectedShapeID = -1; // Reset the selected shape ID
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            std::cout << "Shape with ID " << selectedShapeID << " not found.\n";
+        }
+    }
+
 };
 
 class CommandLine {
@@ -386,7 +571,7 @@ public:
                 }
             } else if (shapeType == "circle") {
                 if (ss >> x >> y >> param1 ) {
-                    if (x - param1 >= 0 && x + param1 <= BOARD_WIDTH && y - param1 >= 0 && y + param1 <= BOARD_HEIGHT) {
+                    if (x - param1 >= 0 || x + param1 <= BOARD_WIDTH || y - param1 >= 0 || y + param1 <= BOARD_HEIGHT) {
                     // x, y, radius
                     std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
                     board.addShape(circle);
@@ -448,7 +633,13 @@ public:
         } else if (action == "undo") {
             board.undo();
             std::cout << "\n";
-         }
+        } else if (action == "select") {
+            board.select();
+            std::cout << "\n";
+        } else if (action == "remove") {
+            board.removeShape();
+            std::cout << "\n";
+        }
         else {
             std::cout << "Unknown command.\n";
         }
