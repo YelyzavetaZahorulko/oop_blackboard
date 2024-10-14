@@ -683,6 +683,29 @@ public:
         }
     }
 
+    void paint(const std::string& newColor) {
+        if (selectedShapeID == -1) {
+            std::cout << "No shape is selected. Please select a shape first.\n";
+            return;
+        }
+
+        bool found = false;
+        for (auto& shape : shapes) {
+            if (shape->getID() == selectedShapeID) {
+                shape->setColor(newColor);
+                std::string shapeType = std::get<1>(shapesParams[selectedShapeID - 1]);
+                std::cout << "ID: " << selectedShapeID << " Shape: " << shapeType << " Color: " << newColor << "\n";
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            std::cout << "Shape with ID " << selectedShapeID << " not found.\n";
+        }
+    }
+
+
 };
 
 class CommandLine {
@@ -800,6 +823,13 @@ public:
         } else if (action == "remove") {
             board.removeShape();
             std::cout << "\n";
+        } else if (action == "paint") {
+            ss >> color;
+            if (color.empty()) {
+                std::cout << "Error: Missing color for paint command.\n";
+            } else {
+                board.paint(color);  // Call the paint method on the board
+            }
         }
         else {
             std::cout << "Unknown command.\n";
