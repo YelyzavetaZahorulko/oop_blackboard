@@ -24,7 +24,7 @@ public:
 
     virtual void draw(std::vector<std::vector<char>>& grid) const = 0;
 
-    virtual std::tuple<std::string, int, int, int, int, bool> getParameters() const = 0;
+    virtual std::tuple<std::string, int, int, int, int, std::string, std::string> getParameters() const = 0;
 
     virtual bool containsPoint(int px, int py) const = 0;
 
@@ -155,8 +155,8 @@ public:
         return false;
     }
 
-    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
-        return std::make_tuple("Triangle", x, y, height, 0, false);
+    std::tuple<std::string, int, int, int, int, std::string, std::string> getParameters() const override {
+        return std::make_tuple("Triangle", x, y, height, 0, fillType, color);
     }
 };
 
@@ -209,8 +209,8 @@ public:
     }
 
     // Return the shape's parameters as a tuple
-    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
-        return std::make_tuple("Circle", x, y, radius, 0, false);
+    std::tuple<std::string, int, int, int, int, std::string, std::string> getParameters() const override {
+        return std::make_tuple("Circle", x, y, radius, 0, fillType, color);
     }
 };
 
@@ -274,8 +274,8 @@ public:
     }
 
     // Method to return the shape's parameters
-    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
-        return std::make_tuple("Rectangle", x, y, width, height, false);
+    std::tuple<std::string, int, int, int, int, std::string, std::string> getParameters() const override {
+        return std::make_tuple("Rectangle", x, y, width, height, fillType, color);
     }
 };
 
@@ -360,15 +360,15 @@ public:
         return false;
     }
 
-    std::tuple<std::string, int, int, int, int, bool> getParameters() const override {
-        return std::make_tuple("Line", x1, y1, x2, y2, false);
+    std::tuple<std::string, int, int, int, int, std::string, std::string> getParameters() const override {
+        return std::make_tuple("Line", x1, y1, x2, y2, fillType, color);
     }
 };
 
 struct Board {
 private:
     std::vector<std::vector<char>> grid;
-    std::vector<std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>> shapesParams; // Store shape parameters
+    std::vector<std::tuple<int, std::string, int, int, int, int, std::string, std::string>> shapesParams; // Store shape parameters
     std::vector<std::shared_ptr<Shape>> shapes;
     int currentShapeID = 1;
     int selectedShapeID = -1;
@@ -388,7 +388,7 @@ public:
         circle->setID(currentShapeID++);
         shapes.push_back(circle);
 
-        shapesParams.push_back(std::make_tuple(circle->getID(), "Circle", x, y, radius, false, fill, color));
+        shapesParams.push_back(std::make_tuple(circle->getID(), "Circle", x, y, radius, 0, fill, color));
     }
 
     // Add a Rectangle to the board
@@ -397,8 +397,7 @@ public:
         rectangle->setID(currentShapeID++);
         shapes.push_back(rectangle);
 
-        shapesParams.push_back(std::make_tuple(rectangle->getID(), "Rectangle", x, y, width, height, false, fill, color));
-
+        shapesParams.push_back(std::make_tuple(rectangle->getID(), "Rectangle", x, y, width, height, fill, color));
     }
 
     // Add a Triangle to the board
@@ -407,8 +406,7 @@ public:
         triangle->setID(currentShapeID++);
         shapes.push_back(triangle);
 
-        shapesParams.push_back(std::make_tuple(triangle->getID(), "Triangle", x, y, height, false, fill, color));
-
+        shapesParams.push_back(std::make_tuple(triangle->getID(), "Triangle", x, y, height, 0, fill, color));
     }
 
     // Add a Line to the board
@@ -417,8 +415,7 @@ public:
         line->setID(currentShapeID++);
         shapes.push_back(line);
 
-        shapesParams.push_back(std::make_tuple(line->getID(), "Line", x1, y1, x2, y2, false, fill, color));
-
+        shapesParams.push_back(std::make_tuple(line->getID(), "Line", x1, y1, x2, y2, fill, color));
     }
 
     // Method to draw all shapes on the board
@@ -474,9 +471,10 @@ public:
 
     void showShapesList() {
         for (const auto& shape : shapes) {
-            auto [type, x, y, param1, param2, isFilled] = shape->getParameters();
+            auto [type, x, y, param1, param2, fillType, color] = shape->getParameters();
             std::cout << "ID: " << shape->getID() << " | Type: " << type
-                      << " | Position: (" << x << ", " << y << ") ";
+                      << " | Position: (" << x << ", " << y << ") "
+                      << " | Fill Type:" << fillType << " | Color:" << color;
             if (type == "Circle") {
                 std::cout << " | Radius: " << param1;
             } else if (type == "Rectangle") {
@@ -521,8 +519,12 @@ public:
             int y = std::get<2>(params);
             int param1 = std::get<3>(params);
             int param2 = std::get<4>(params);
+            std::string fillType = std::get<5>(params);
+            std::string color = std::get<6>(params);
 
-            outFile << type << " " << x << " " << y << " " << param1 << " " << param2 << "\n";
+
+            outFile << type << " " << x << " " << y << " " << param1 << " " << param2
+            << " " << fillType << " " << color << "\n";
         }
 
         outFile.close();
@@ -546,23 +548,23 @@ public:
         int x, y, param1, param2;
 
         // Load each shape from the file and add to the board
-        while (inFile >> type) {
+        while (inFile >> type >> x >> y >> param1 >> param2 >> fill >> color) {
             std::cout << "Loaded shape: " << type << " at (" << x << ", " << y << ") with params: " << param1 << " " << param2 << "\n";
             if (type == "Triangle") {
-                inFile >> x >> y >> param1;
-                std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
+                // inFile >> x >> y >> param1;
+                // std::shared_ptr<Shape> triangle = std::make_shared<Triangle>(x, y, param1);
                 addTriangle(x, y, param1, fill, color);
             } else if (type == "Circle") {
-                inFile >> x >> y >> param1;
-                std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
+                // inFile >> x >> y >> param1;
+                // std::shared_ptr<Shape> circle = std::make_shared<Circle>(x, y, param1);
                 addCircle(x, y, param1, fill, color);
             } else if (type == "Rectangle") {
-                inFile >> x >> y >> param1 >> param2;
-                std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
+                // inFile >> x >> y >> param1 >> param2;
+                // std::shared_ptr<Shape> rectangle = std::make_shared<Rectangle>(x, y, param1, param2);
                 addRectangle(x, y, param1, param2, fill, color);
             } else if (type == "Line") {
-                inFile >> x >> y >> param1 >> param2 >> fill >> color;
-                std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
+                // inFile >> x >> y >> param1 >> param2 >> fill >> color;
+                // std::shared_ptr<Shape> line = std::make_shared<Line>(x, y, param1, param2);
                 addLine(x, y, param1, param2, fill, color);
             }
         }
@@ -628,21 +630,21 @@ public:
 
 
     // for select method
-    static void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>& params) {
+    static void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, std::string, std::string>& params) {
         int id = std::get<0>(params);
         std::string shapeType = std::get<1>(params);
         int x = std::get<2>(params);
         int y = std::get<3>(params);
         int param1 = std::get<4>(params);
         int param2 = std::get<5>(params);
-        std::string fillColor = std::get<7>(params);
-        std::string outlineColor = std::get<8>(params);
+        std::string fillType = std::get<6>(params);
+        std::string color = std::get<7>(params);
 
         std::cout << "Selected Shape ID: " << id
                 <<", Type: " << shapeType
                 << ", Position: (" << x << ", " << y << ")"
-                << ", Fill Color: " << fillColor
-                << ", Outline Color: " << outlineColor;
+                << ", Fill Type: " << fillType
+                << ", Color: " << color;
 
         if (shapeType == "Triangle") {
             std::cout << ", Height: " << param1 << "\n";
