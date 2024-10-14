@@ -9,13 +9,13 @@
 const int BOARD_WIDTH = 80;
 const int BOARD_HEIGHT = 25;
 
-
 class Shape {
 protected:
     int x, y;
     int shapeID;
     std::string fillType;
     std::string color;
+
 
 public:
     Shape(int x, int y, const std::string& fillType, const std::string& color )
@@ -63,6 +63,21 @@ public:
         else if (color == "yellow") return "\033[33m[0m";
         return "\033[0m";  // Default/reset color
     }
+
+    char getColorChar() const {
+        std::cout << "Color being checked: " << color << std::endl;
+        if (color == "red") {
+            return 'r';
+        } else if (color == "green") {
+            return 'g';
+        } else if (color == "blue") {
+            return 'b';
+        } else if (color == "yellow") {
+            return 'y';
+        } else {
+            return '*';  // Default case
+        }
+    }
 };
 
 
@@ -77,7 +92,7 @@ public:
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
-        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
+        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : (color == "blue") ? 'b' : (color == "yellow") ? 'y' : '*';
 
         if (height <= 0) return; // Ensure the triangle height is positive and sensible
         // char colorSymbol = color.empty() ? '*' : color[0];
@@ -159,9 +174,10 @@ public:
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (radius <= 0) return;
 
-        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
+        char colorChar = getColorChar();
+        std::cout << "Drawing Circle with color: " << colorChar << " at position (" << x << "," << y << ")\n";  // Debugging
+
         int r2 = radius * radius;  // Precompute radius squared to compare distances
-        // char colorSymbol = color.empty() ? '*' : color[0];
         for (int i = 0; i < BOARD_HEIGHT; ++i) {
             for (int j = 0; j < BOARD_WIDTH; ++j) {
                 // Calculate the squared distance from the point (i, j) to the center (x, y)
@@ -213,7 +229,7 @@ public:
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (width <= 0 || height <= 0) return;
 
-        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
+        char colorChar = getColorChar();
 
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
@@ -231,13 +247,6 @@ public:
                             grid[gridY][gridX] = colorChar; // Draw top and bottom edges
                         }
                     }
-
-                    // // Draw the top and bottom borders
-                    // if (i == 0 || i == height - 1) {
-                    //     if (gridY < BOARD_HEIGHT && gridX < BOARD_WIDTH) {
-                    //         grid[gridY][gridX] = '*'; // Draw top and bottom edges
-                    //     }
-                    // }
 
                     // Draw the left and right borders
                     else if (j == 0 || j == width - 1) {
@@ -283,7 +292,7 @@ public:
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
-        char colorChar = (color == "red") ? 'r' : (color == "green") ? 'g' : '*';
+        char colorChar = getColorChar();
 
         int dx = abs(x2 - x1);
         int dy = abs(y2 - y1);
@@ -359,22 +368,12 @@ public:
 struct Board {
 private:
     std::vector<std::vector<char>> grid;
-    std::vector<std::tuple<int, std::string, int, int, int, int, bool>> shapesParams; // Store shape parameters
+    std::vector<std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>> shapesParams; // Store shape parameters
     std::vector<std::shared_ptr<Shape>> shapes;
     int currentShapeID = 1;
     int selectedShapeID = -1;
 public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
-
-    void printColoredChar(char c) {
-        switch (c) {
-            case 'r': std::cout << "\033[31m*\033[0m"; break;  // Red
-            case 'g': std::cout << "\033[32m*\033[0m"; break;  // Green
-            case 'b': std::cout << "\033[34mb\033[0m"; break;  // Blue
-            case 'y': std::cout << "\033[33my\033[0m"; break;  // Yellow
-            default: std::cout << c;  // No color, just print the char
-        }
-    }
 
     bool isOccupied(int x, int y) const {
         for (const auto& shape : shapes) {
@@ -429,7 +428,17 @@ public:
         for (const auto& row : grid) {
             std::cout << "|";
             for (char cell : row) {
-                printColoredChar(cell);  // Print each cell, which may contain color codes
+                if (cell == 'r') {
+                    std::cout << "\033[31m" << 'r' << "\033[0m";  // Red
+                } else if (cell == 'g') {
+                    std::cout << "\033[32m" << 'g' << "\033[0m";  // Green
+                } else if (cell == 'b') {
+                    std::cout << "\033[34m" << 'b' << "\033[0m";  // Blue
+                } else if (cell == 'y') {
+                    std::cout << "\033[33m" << 'y' << "\033[0m";  // Yellow
+                } else {
+                    std::cout << cell;  // Default (e.g., '*')
+                }  // Print each cell, which may contain color codes
             }
             std::cout << "|";
             std::cout << '\n';
@@ -453,26 +462,17 @@ public:
     }
 
     void showShapesList() {
-        for (const auto& params : shapesParams) {
-            int id = std::get<0>(params);
-            std::string shapeType = std::get<1>(params);
-            int x = std::get<2>(params);
-            int y = std::get<3>(params);
-            int param1 = std::get<4>(params);
-            int param2 = std::get<5>(params);
-            // bool isVertical = std::get<6>(params);
-
-            std::cout << "Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
-
-            if (shapeType == "Triangle") {
-                std::cout << ", Height: " << param1 << "\n";
-            } else if (shapeType == "Circle") {
-                std::cout << ", Radius: " << param1 << "\n";
-            } else if (shapeType == "Rectangle") {
-                std::cout << ", Width: " << param1 << ", Height: " << param2 << "\n";
-            } else if (shapeType == "Line") {
-                std::cout << ", X2: " << param1 << ", Y2: " << param2 << "\n";
+        for (const auto& shape : shapes) {
+            auto [type, x, y, param1, param2, isFilled] = shape->getParameters();
+            std::cout << "ID: " << shape->getID() << " | Type: " << type
+                      << " | Position: (" << x << ", " << y << ") ";
+            if (type == "Circle") {
+                std::cout << " | Radius: " << param1;
+            } else if (type == "Rectangle") {
+                std::cout << " | Width: " << param1 << " | Height: " << param2;
             }
+            // Handle other shapes similarly
+            std::cout << std::endl;
         }
     }
 
@@ -560,63 +560,78 @@ public:
         std::cout << "Blackboard loaded from " << filename << ".\n";
     }
 
-    void select() {
-        std::cout << "Select by ID or coordinates? (id/coord): ";
-        std::string choice;
-        std::cin >> choice;
+    void select(const std::string& input) {
+        std::istringstream iss(input);
+        std::vector<std::string> tokens;
+        std::string token;
 
-        if (choice == "id") {
-            int id;
-            std::cout << "Enter Shape ID: ";
-            std::cin >> id;
-            bool found = false;
-            for (const auto& params : shapesParams) {
-                if (std::get<0>(params) == id) {
-                    selectedShapeID = id;
-                    printShapeInfo(params);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                std::cout << "Shape with ID " << id << " not found.\n";
-            }
+        // Tokenize the input based on whitespace
+        while (iss >> token) {
+            tokens.push_back(token);
         }
-        else if (choice == "coord") {
-            int px, py;
-            std::cout << "Enter X coordinate: ";
-            std::cin >> px;
-            std::cout << "Enter Y coordinate: ";
-            std::cin >> py;
 
-            bool found = false;
-            for (int i = shapes.size() - 1; i >= 0; --i) {
-                if (shapes[i]->containsPoint(px, py)) {
-                    selectedShapeID = std::get<0>(shapesParams[i]);
-                    printShapeInfo(shapesParams[i]);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                std::cout << "No shape occupies the point (" << px << ", " << py << ").\n";
-            }
-        }
-        else {
-            std::cout << "Invalid selection option.\n";
+        if (tokens.size() == 1) {
+            // One argument, treat it as an ID
+            selectByID(std::stoi(tokens[0]));
+        } else if (tokens.size() == 2) {
+            // Two arguments, treat them as coordinates
+            int x = std::stoi(tokens[0]);
+            int y = std::stoi(tokens[1]);
+            selectByCoordinates(x, y);
+        } else {
+            std::cout << "Invalid input. Use 'select <id>' or 'select <x> <y>'.\n";
         }
     }
 
+    // Method to select a shape by ID
+    void selectByID(int id) {
+        bool found = false;
+        for (const auto& params : shapesParams) {
+            if (std::get<0>(params) == id) {
+                selectedShapeID = id;
+                printShapeInfo(params);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "Shape with ID " << id << " not found.\n";
+        }
+    }
+
+    // Method to select a shape by coordinates
+    void selectByCoordinates(int px, int py) {
+        bool found = false;
+        for (int i = shapes.size() - 1; i >= 0; --i) {
+            if (shapes[i]->containsPoint(px, py)) {
+                selectedShapeID = std::get<0>(shapesParams[i]);
+                printShapeInfo(shapesParams[i]);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cout << "No shape occupies the point (" << px << ", " << py << ").\n";
+        }
+    }
+
+
     // for select method
-    void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool>& params) const {
+    void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>& params) const {
         int id = std::get<0>(params);
         std::string shapeType = std::get<1>(params);
         int x = std::get<2>(params);
         int y = std::get<3>(params);
         int param1 = std::get<4>(params);
         int param2 = std::get<5>(params);
+        std::string fillColor = std::get<7>(params);
+        std::string outlineColor = std::get<8>(params);
 
-        std::cout << "Selected Shape ID: " << id << ", Type: " << shapeType << ", X: " << x << ", Y: " << y;
+        std::cout << "Selected Shape ID: " << id
+                <<", Type: " << shapeType
+                << ", Position: (" << x << ", " << y << ")"
+                << ", Fill Color: " << fillColor
+                << ", Outline Color: " << outlineColor;
 
         if (shapeType == "Triangle") {
             std::cout << ", Height: " << param1 << "\n";
@@ -766,7 +781,9 @@ public:
             board.undo();
             std::cout << "\n";
         } else if (action == "select") {
-            board.select();
+            std::string selectInput;
+            std::getline(ss, selectInput);  // Capture the rest of the line as select input
+            board.select(selectInput);  // Assume this function is implemented
             std::cout << "\n";
         } else if (action == "remove") {
             board.removeShape();
