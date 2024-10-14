@@ -387,6 +387,8 @@ public:
         auto circle = std::make_shared<Circle>(x, y, radius, fill, color);
         circle->setID(currentShapeID++);
         shapes.push_back(circle);
+
+        shapesParams.push_back(std::make_tuple(circle->getID(), "Circle", x, y, radius, false, fill, color));
     }
 
     // Add a Rectangle to the board
@@ -394,6 +396,9 @@ public:
         auto rectangle = std::make_shared<Rectangle>(x, y, width, height, fill, color);
         rectangle->setID(currentShapeID++);
         shapes.push_back(rectangle);
+
+        shapesParams.push_back(std::make_tuple(rectangle->getID(), "Rectangle", x, y, width, height, false, fill, color));
+
     }
 
     // Add a Triangle to the board
@@ -401,6 +406,9 @@ public:
         auto triangle = std::make_shared<Triangle>(x, y, height, fill, color);
         triangle->setID(currentShapeID++);
         shapes.push_back(triangle);
+
+        shapesParams.push_back(std::make_tuple(triangle->getID(), "Triangle", x, y, height, false, fill, color));
+
     }
 
     // Add a Line to the board
@@ -408,6 +416,9 @@ public:
         auto line = std::make_shared<Line>(x1, y1, x2, y2, fill, color);
         line->setID(currentShapeID++);
         shapes.push_back(line);
+
+        shapesParams.push_back(std::make_tuple(line->getID(), "Line", x1, y1, x2, y2, false, fill, color));
+
     }
 
     // Method to draw all shapes on the board
@@ -476,7 +487,7 @@ public:
         }
     }
 
-    void availableShapes() const {
+    static void availableShapes() {
         std::cout << "Triangle: fill, color, coordinates, height\n";
         std::cout << "Circle: fill, color, coordinates, radius\n";
         std::cout << "Rectangle: fill, color, coordinates, height, width\n";
@@ -617,7 +628,7 @@ public:
 
 
     // for select method
-    void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>& params) const {
+    static void printShapeInfo(const std::tuple<int, std::string, int, int, int, int, bool, std::string, std::string>& params) {
         int id = std::get<0>(params);
         std::string shapeType = std::get<1>(params);
         int x = std::get<2>(params);
@@ -683,7 +694,6 @@ public:
         std::istringstream ss(command);
         std::string action, shapeType, fill, color, filename;
         int x, y, param1, param2 = 0;
-        bool isVertical = false;
 
         ss >> action ;
 
@@ -775,7 +785,7 @@ public:
             board.showShapesList();
             std::cout << "\n";
         } else if (action == "shapes") {
-            board.availableShapes();
+            Board::availableShapes();
             std::cout << "\n";
         } else if (action == "undo") {
             board.undo();
