@@ -1,2 +1,0 @@
-Line 1 1 2 2 fill red
-Circle 2 3 1 0 fill green

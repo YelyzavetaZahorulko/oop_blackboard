@@ -28,6 +28,8 @@ public:
 
     virtual bool containsPoint(int px, int py) const = 0;
 
+    virtual void move(int newX, int newY) = 0;
+
     void setID(int id) { shapeID = id; }
     int getID() const { return shapeID; }
 
@@ -56,6 +58,25 @@ public:
         return fillType == "frame";
     }
 
+    int getX() const {
+        return x;
+    }
+
+    // Getter for Y
+    int getY() const {
+        return y;
+    }
+
+    // Setter for X
+    void setX(int newX) {
+        x = newX;
+    }
+
+    // Setter for Y
+    void setY(int newY) {
+        y = newY;
+    }
+
     std::string getColorCode() const {
         if (color == "red") return "\033[31m[0m";
         else if (color == "green") return "\033[32m[0m";
@@ -65,7 +86,6 @@ public:
     }
 
     char getColorChar() const {
-        std::cout << "Color being checked: " << color << std::endl;
         if (color == "red") {
             return 'r';
         } else if (color == "green") {
@@ -87,8 +107,37 @@ public:
     Triangle(int x, int y, int height, const std::string& fill = "none", const std::string& color = "none")
     : Shape(x, y, fill, color), height(height) {}
 
+    void setHeight(int newHeight) {
+        height = newHeight;
+    }
+
+
+    int getX() const {
+        return x;
+    }
+
+    // Getter for Y
+    int getY() const {
+        return y;
+    }
+
+    // Setter for X
+    void setX(int newX) {
+        x = newX;
+    }
+
+    // Setter for Y
+    void setY(int newY) {
+        y = newY;
+    }
+
     void setColor(const std::string& newColor) {
         color = newColor;
+    }
+
+    void move(int newX, int newY) override {
+        x = newX;
+        y = newY;
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
@@ -167,15 +216,42 @@ public:
     Circle(int x, int y, int radius, const std::string& fill = "none", const std::string& color = "none")
     : Shape(x, y, fill, color), radius(radius) {}
 
+    void setRadius(int newRadius) {
+        radius = newRadius;
+    }
+
     void setColor(const std::string& newColor) {
         color = newColor;
+    }
+
+    int getX() const {
+        return x;
+    }
+
+    // Getter for Y
+    int getY() const {
+        return y;
+    }
+
+    // Setter for X
+    void setX(int newX) {
+        x = newX;
+    }
+
+    // Setter for Y
+    void setY(int newY) {
+        y = newY;
+    }
+
+    void move(int newX, int newY) override {
+        x = newX;
+        y = newY;
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
         if (radius <= 0) return;
 
         char colorChar = getColorChar();
-        std::cout << "Drawing Circle with color: " << colorChar << " at position (" << x << "," << y << ")\n";  // Debugging
 
         int r2 = radius * radius;  // Precompute radius squared to compare distances
         for (int i = 0; i < BOARD_HEIGHT; ++i) {
@@ -222,8 +298,37 @@ public:
     Rectangle(int x, int y, int width, int height, const std::string& fill = "none", const std::string& color = "none")
     : Shape(x, y, fill, color), width(width), height(height) {}
 
+    void setDimensions(int newWidth, int newHeight) {
+        width = newWidth;
+        height = newHeight;
+    }
+
     void setColor(const std::string& newColor) {
         color = newColor;
+    }
+
+    int getX() const {
+        return x;
+    }
+
+    // Getter for Y
+    int getY() const {
+        return y;
+    }
+
+    // Setter for X
+    void setX(int newX) {
+        x = newX;
+    }
+
+    // Setter for Y
+    void setY(int newY) {
+        y = newY;
+    }
+
+    void move(int newX, int newY) override {
+        x = newX;
+        y = newY;
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
@@ -287,8 +392,39 @@ public:
     Line(int startX, int startY, int endX, int endY, const std::string& fill = "none", const std::string& color = "none")
     : Shape(startX, startY, fill, color), x1(startX), y1(startY), x2(endX), y2(endY) {}
 
+    void setDimensions(int newX1, int newY1, int newX2, int newY2) {
+        x1 = newX1;
+        y1 = newY1;
+        x2 = newX2;
+        y2 = newY2;
+    }
+
     void setColor(const std::string& newColor) {
         color = newColor;
+    }
+
+    int getX() const {
+        return x;
+    }
+
+    // Getter for Y
+    int getY() const {
+        return y;
+    }
+
+    // Setter for X
+    void setX(int newX) {
+        x = newX;
+    }
+
+    // Setter for Y
+    void setY(int newY) {
+        y = newY;
+    }
+
+    void move(int newX, int newY) override {
+        x = newX;
+        y = newY;
     }
 
     void draw(std::vector<std::vector<char>>& grid) const override {
@@ -372,6 +508,7 @@ private:
     std::vector<std::shared_ptr<Shape>> shapes;
     int currentShapeID = 1;
     int selectedShapeID = -1;
+
 public:
     Board() : grid(BOARD_HEIGHT, std::vector<char>(BOARD_WIDTH, ' ')) {}
 
@@ -705,6 +842,139 @@ public:
         }
     }
 
+    void move(int newX, int newY) {
+        if (selectedShapeID == -1) {
+            std::cout << "No shape selected.\n";
+            return;
+        }
+
+        bool found = false;
+
+        // Find the selected shape
+        for (size_t i = 0; i < shapes.size(); ++i) {
+            if (std::get<0>(shapesParams[i]) == selectedShapeID) {
+                found = true;
+
+                // Move the shape to the new position
+                auto shape = shapes[i];
+                auto& params = shapesParams[i];
+
+                if (newX < 0 || newX >= BOARD_WIDTH || newY < 0 || newY >= BOARD_HEIGHT) {
+                    std::cout << "Error: Shape will go out of the board boundaries.\n";
+                    return;
+                }
+
+                // Set new position for the shape
+                shape->setX(newX);
+                shape->setY(newY);
+
+                // Update the parameters in shapesParams for the new position
+                std::get<2>(params) = newX;
+                std::get<3>(params) = newY;
+
+                // // Bring the shape to the foreground by moving it to the end of the list
+                // shapes.erase(shapes.begin() + i);  // Remove shape from current position
+                // shapesParams.erase(shapesParams.begin() + i); // Remove corresponding params
+
+                shapes.push_back(shape);  // Add shape to the end
+                shapesParams.push_back(params);  // Add params to the end
+
+                // Use shape type from params
+                std::string shapeType = std::get<1>(params);
+
+                // Output the move message
+                std::cout << selectedShapeID << " " << shapeType << " moved to (" << newX << ", " << newY << ").\n";
+
+                break;
+            }
+        }
+
+        if (!found) {
+            std::cout << "Shape with ID " << selectedShapeID << " not found.\n";
+        }
+    }
+
+
+    void moveToForeground() {
+        if (selectedShapeID != -1) {
+            for (const auto& shape : shapes) {
+                if (shape->getID() == selectedShapeID) {
+                    // Use getParameters to retrieve current position (x, y)
+                    auto params = shape->getParameters();
+                    int x = std::get<1>(params);  // Assuming x is the second element in the tuple
+                    int y = std::get<2>(params);  // Assuming y is the third element in the tuple
+
+                    // Call move to bring the shape to the foreground without changing its position
+                    move(x, y);
+                    break;
+                }
+            }
+        }
+    }
+
+    void edit(int new_size1, int new_size2 = -1) {
+    if (selectedShapeID == -1) {
+        std::cout << "Error: No shape selected." << std::endl;
+        return;
+    }
+
+    // Iterate through the shapes to find the selected shape
+    for (size_t i = 0; i < shapes.size(); ++i) {
+        if (shapes[i]->getID() == selectedShapeID) {
+            // Get current position and parameters of the selected shape
+            auto [shapeType, x, y, param1, param2, fill, color] = shapes[i]->getParameters();
+
+            // Circle case: Modify radius and check boundary
+            if (auto circle = dynamic_cast<Circle*>(shapes[i].get())) {
+                int radius = new_size1;
+                if (x - radius < 0 || x + radius > BOARD_WIDTH || y - radius < 0 || y + radius > BOARD_HEIGHT) {
+                    std::cout << "Error: Shape will go out of the board." << std::endl;
+                    return;
+                }
+                circle->setRadius(new_size1);
+                std::cout << "Size of circle changed." << std::endl;
+
+            // Rectangle case: Modify dimensions and check boundary
+            } else if (auto rectangle = dynamic_cast<Rectangle*>(shapes[i].get())) {
+                int width = new_size1;
+                int height = (new_size2 == -1) ? param2 : new_size2;
+                if (x < 0 || x + width > BOARD_WIDTH || y < 0 || y + height > BOARD_HEIGHT) {
+                    std::cout << "Error: Shape will go out of the board." << std::endl;
+                    return;
+                }
+                rectangle->setDimensions(width, height);
+                std::cout << "Size of rectangle changed." << std::endl;
+
+            // Triangle case: Modify height and check boundary
+            } else if (auto triangle = dynamic_cast<Triangle*>(shapes[i].get())) {
+                int height = new_size1;
+                int baseWidth = height * 2 - 1; // Typical triangular width calculation
+                if (x - baseWidth / 2 < 0 || x + baseWidth / 2 > BOARD_WIDTH || y < 0 || y + height > BOARD_HEIGHT) {
+                    std::cout << "Error: Shape will go out of the board." << std::endl;
+                    return;
+                }
+                triangle->setHeight(height);
+                std::cout << "Size of triangle changed." << std::endl;
+
+            // Square case: Modify side length and check boundary
+            } else if (auto line = dynamic_cast<Line*>(shapes[i].get())) {
+                // Check if the new coordinates will fit on the board
+                if (x < 0 || x + new_size1 > BOARD_WIDTH || y < 0 || y + new_size2 > BOARD_HEIGHT) {
+                    std::cout << "Error: Shape will go out of the board." << std::endl;
+                    return;
+                }
+                line->setDimensions(x, y, x + new_size1, y + new_size2);
+                std::cout << "Size of line changed." << std::endl;
+
+            } else {
+                std::cout << "Error: Unknown shape type." << std::endl;
+            }
+            return; // Exit the function after modifying the shape
+        }
+    }
+    std::cout << "Error: Shape with ID " << selectedShapeID << " not found." << std::endl;
+}
+
 
 };
 
@@ -829,6 +1099,21 @@ public:
                 std::cout << "Error: Missing color for paint command.\n";
             } else {
                 board.paint(color);  // Call the paint method on the board
+            }
+        } else if (action == "move") {
+            int newX, newY;
+            ss >> newX >> newY;
+            board.move(newX, newY);
+            std::cout << "\n";
+        } else if (action == "edit") {
+            if (ss >> param1) {
+                if (ss >> param2) {
+                    board.edit(param1, param2); // Calls edit with two parameters
+                } else {
+                    board.edit(param1); // Calls edit with one parameter
+                }
+            } else {
+                std::cout << "Error: Missing parameters for edit command." << std::endl;
             }
         }
         else {
